@@ -72,16 +72,18 @@ def decorator [ ] {
     match $env.NU_POWER_DECORATOR {
         'plain' => {
             {|s, direction?: string, color?: string = 'light_yellow', next_color?: string|
+                let dlm = $env.NU_POWER_CONFIG.delimitor
+                let dlm = $"(ansi $dlm.color)($dlm.char)"
                 match $direction {
                     '|>'|'>' => {
-                        let r = $'(ansi light_yellow)|'
+                        let r = $dlm
                         $"($s)($r)"
                     }
                     '>>'|'<<' => {
                         $s
                     }
                     '<' => {
-                        let l = $'(ansi light_yellow)|'
+                        let l = $dlm
                         $"($l)($s)"
                     }
                 }
@@ -191,8 +193,11 @@ def 'calc bar width' [-n:int=0] {
 
 def up_prompt [segment] {
     let thunk = $segment
-        | each {|y| $y | each {|x| get_component $x } }
+    | each {|y| $y | each {|x| get_component $x } }
     { ||
+        let sep = $env.NU_POWER_CONFIG.separator_bar
+        let dlm = $env.NU_POWER_CONFIG.delimitor
+        let dlm = $"(ansi $dlm.color)($dlm.char)"
         let ss = $thunk
             | each {|y|
                 $y
@@ -204,17 +209,17 @@ def up_prompt [segment] {
                         $acc | append $y.1
                     }
                 }
-                | str join $'(ansi light_yellow)|'
+                | str join $dlm
             }
         if ($env.NU_POWER_FRAME_HEADER? | is-empty) {
             let fl = $ss | calc bar width
-            $ss | str join $"(ansi xterm_grey)('' | fill -c '-' -w $fl)(ansi reset)"
+            $ss | str join $"(ansi $sep.color)('' | fill -c $sep.char -w $fl)(ansi reset)"
         } else {
             let c = $env.NU_POWER_FRAME_HEADER
             let fl = $ss | calc bar width -n ($c.upperleft_size + 1)
             let color = if (is-admin) { ansi light_red_bold } else { ansi light_cyan }
-            $ss | str join $"(ansi xterm_grey)('' | fill -c '-' -w $fl)(ansi reset)"
-            | $"($color)($c.upperleft)(ansi light_yellow)|($in)($color)($c.lowerleft)(ansi reset)"
+            $ss | str join $"(ansi $sep.color)('' | fill -c $sep.char -w $fl)(ansi reset)"
+            | $"($color)($c.upperleft)($dlm)($in)($color)($c.lowerleft)(ansi reset)"
         }
     }
 }
@@ -459,6 +464,14 @@ export-env {
         {
             time: {
                 style: null
+            }
+            delimitor: {
+                color: xterm_grey
+                char: '|'
+            }
+            separator_bar: {
+                color: xterm_grey
+                char: '-'
             }
         }
     )
